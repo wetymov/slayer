@@ -16,7 +16,7 @@ def createslayer(name_slayer: str, owner:int, breath: str):
     cursor.execute('INSERT INTO slayer (name_slayer, owner, breath) VALUES (?, ?, ?)', (name_slayer, owner, breath))
     conn.commit()
     
-@bot.message_handler(commands=['start'])
+@bot.message_handler(commands=['start'])#/start - обучение
 def start_message(message):
     us_id = message.from_user.id
     r = cursor.execute(f'''SELECT slayer_id FROM slayer WHERE owner = {us_id}''').fetchone()
@@ -42,7 +42,22 @@ def slayer(message):
         bal = cursor.execute(f'''SELECT balance FROM slayer WHERE owner = {us_id}''').fetchone()
         lvl = cursor.execute(f'''SELECT level FROM slayer WHERE owner = {us_id}''').fetchone()
         dyh = cursor.execute(f'''SELECT breath FROM slayer WHERE owner = {us_id}''').fetchone()
-        bot.send_message(message.chat.id, f'Имя - {name[0]}\nУровень - {lvl[0]}\nЗдоровье - {hp[0]}❤️\nСила - {power[0]} ⚡️\nДыхание - {dyh[0]}\nБаланс - {bal[0]} монет')
+        expi = cursor.execute(f'''SELECT exp FROM slayer WHERE owner = {us_id}''').fetchone()
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        item1 = types.KeyboardButton("Идти на миссию⚡️")
+        markup.add(item1)
+        item2 = types.KeyboardButton("Тренировка💪🏾")
+        markup.add(item2)
+        expMAX = int(lvl[0]) * 100
+        if expi[0] >= expMAX:
+            cursor.execute(f'''UPDATE slayer SET level == {lvl[0]+1} WHERE owner == {us_id}''')
+            conn.commit()
+            cursor.execute(f'''UPDATE slayer SET exp == {expMAX-expi[0]} WHERE owner == {us_id}''')
+            conn.commit()
+            expMAX += 100
+        lvl = cursor.execute(f'''SELECT level FROM slayer WHERE owner = {us_id}''').fetchone()
+        expi = cursor.execute(f'''SELECT exp FROM slayer WHERE owner = {us_id}''').fetchone()
+        bot.send_message(message.chat.id, f'Имя - {name[0]}\nУровень - {lvl[0]}\nЗдоровье - {hp[0]} ❤️\nСила - {power[0]} ⚡️\nДыхание - {dyh[0]}\nБаланс - {bal[0]} монет\nОпыт - {expi[0]}/{expMAX} exp', reply_markup=markup)
 
 
     else:
@@ -54,13 +69,7 @@ def slayer(message):
 def nameslayer(message):
     global namesl
     namesl = message.text
-    bot.send_message(message.chat.id, '1 - дыхание пламени')
-    bot.send_message(message.chat.id, '2 - дыхание воды')
-    bot.send_message(message.chat.id, '3 - дыхание звука')
-    bot.send_message(message.chat.id, '4 - дыхание грома')
-    bot.send_message(message.chat.id, '5 - дыхание любви')
-    bot.send_message(message.chat.id, '6 - дыхание ветра')
-    bot.send_message(message.chat.id, '7 - дыхание луны')
+    bot.send_message(message.chat.id, '1 - дыхание пламени\n2 - дыхание воды\n3 - дыхание звука\n4 - дыхание грома\n5 - дыхание любви\n6 - дыхание ветра\n7 - дыхание луны')
     msg = bot.send_message(message.chat.id, 'Введите номер дыхания: ')
     bot.register_next_step_handler(msg, breath)
 
@@ -108,40 +117,50 @@ def do(message):
     us_id = message.from_user.id
     r = cursor.execute(f'''SELECT slayer_id FROM slayer WHERE owner = {us_id}''').fetchone()
     if r is None:
-        bot.send_message(message.chat.id, 'Создайте своего истребителя демонов /slayer')
+        bot.send_message(message.chat.id, 'Эта фунция вам не допуступна\nСоздайте своего истребителя демонов /slayer')
     else:
-        if message.text == 'Идти на миссию':
+        if 'идти на миссию' in message.text.lower():
             r = cursor.execute(f'''SELECT zan FROM slayer WHERE owner = {us_id}''').fetchone()
             if r[0] == 0:
                 bot.send_message(message.chat.id, 'Ворон прислал вам задание: \n-Где-то поблизости есть демон, отправляйся на его убийство')
-                bot.send_message(message.chat.id, 'Ваш персонаж вернется с миссии через 1 минуту')
+                bot.send_message(message.chat.id, 'Ваш персонаж вернется с миссии через 15 секунд')
                 cursor.execute(f'''UPDATE slayer SET zan == 1 WHERE owner == {us_id}''')
                 conn.commit()
-                time.sleep(60)
-                r = cursor.execute(f'''SELECT balance FROM slayer WHERE owner = {us_id}''').fetchone()
-                valera = int(r[0]) + 100
+                time.sleep(15)
+                bal = cursor.execute(f'''SELECT balance FROM slayer WHERE owner = {us_id}''').fetchone()
+                koif = cursor.execute(f'''SELECT koif FROM slayer WHERE owner = {us_id}''').fetchone()
+                valera = int(bal[0]) + (100*koif[0])
                 cursor.execute(f'''UPDATE slayer SET balance == {valera} WHERE owner == {us_id}''')
+                conn.commit()
+                nex = cursor.execute(f'''SELECT exp FROM slayer WHERE owner = {us_id}''').fetchone()
+                nexon = 20 + int(nex[0])
+                cursor.execute(f'''UPDATE slayer SET exp == {nexon} WHERE owner == {us_id}''')
                 conn.commit()
                 cursor.execute(f'''UPDATE slayer SET zan == 0 WHERE owner == {us_id}''')
                 conn.commit()
-                bot.send_message(message.chat.id, f'Персонаж вернулся с миссии, ваш баланс равен {valera} монет')
+                bot.send_message(message.chat.id, f'Персонаж вернулся с миссии и заработал 100 монет, ваш баланс равен {valera} монет')
 
             else:
                 bot.send_message(message.chat.id, 'Персонаж занят')
-            
+                bot.send_message(message.chat.id, 'Подождите')
+        elif 'магазин' in message.text.lower():
+            print(0)
+        elif 'тренировка' in message.text.lower():
+            r = cursor.execute(f'''SELECT zan FROM slayer WHERE owner = {us_id}''').fetchone()
+            if r[0] == 0:
+                bot.send_message(message.chat.id, 'Вы начали тренировку')
+                bot.send_message(message.chat.id, 'Время тренировки 20 секунд')
+                cursor.execute(f'''UPDATE slayer SET zan == 1 WHERE owner == {us_id}''')
+                conn.commit()
+                time.sleep(20)
+                cursor.execute(f'''UPDATE slayer SET zan == 0 WHERE owner == {us_id}''')
+                conn.commit()
+                nex = cursor.execute(f'''SELECT exp FROM slayer WHERE owner = {us_id}''').fetchone()
+                nexon = 50 + int(nex[0])
+                cursor.execute(f'''UPDATE slayer SET exp == {nexon} WHERE owner == {us_id}''')
+                conn.commit()
+                bot.send_message(message.chat.id, 'Ура!Тернировка подошла к концу\nВы заработали 50 опыта')
 
-
-
-
-
-
-
-'''@bot.message_handler(commands=['help'])
-def helping(message):
-    bot.send_message(message.chat.id, '')
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    item1 = types.KeyboardButton("/обновить_деньги")
-    markup.add(item1)'''
 
 
 bot.polling(none_stop=0)
