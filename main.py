@@ -3,7 +3,7 @@ import telebot
 from telebot import types
 import random
 import time
-token = '2069945398:AAGAkgtu3Cr2R0UH28R2BoEUKYaeD4F8ZZA'
+token = 'ТОКЕН'
 bot = telebot.TeleBot(token)
 conn = sqlite3.connect('clicker.db', check_same_thread=False)
 cursor = conn.cursor()
