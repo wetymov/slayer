@@ -15,4 +15,4 @@
 
 # СКРИН РАБОТЫ В ДАННЫЙ МОМЕНТ
 
-![Header](https://github.com/wetymov/slayer/blob/main/Readmeass/nano.jpg)
+![Header](https://github.com/wetymov/slayer/blob/main/_-LyreH8UfI.jpg)
