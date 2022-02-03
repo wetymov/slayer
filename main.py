@@ -217,12 +217,18 @@ def callback_worker(call):
         else:
             bot.send_message(call.message.chat.id, 'Не хватает средств /slayer')
     elif call.data == "clinok":
-        cursor.execute(f'''UPDATE slayer SET balance = balance - 300 WHERE owner == {us_id}''')
-        conn.commit()
-        cursor.execute(f'''UPDATE slayer SET power = power + 50 WHERE owner == {us_id}''')
-        conn.commit()
-        bot.edit_message_reply_markup(call.message.chat.id, message_id = call.message.message_id, reply_markup = '')
-        bot.send_message(call.from_user.id, 'Вы купили клинок(+25⚡️) 300 монет')
+        bal = cursor.execute(f'''SELECT balance FROM slayer WHERE owner = {us_id}''').fetchone()
+        if bal[0] >= 300:
+            cursor.execute(f'''UPDATE slayer SET balance = balance - 300 WHERE owner == {us_id}''')
+            conn.commit()
+            cursor.execute(f'''UPDATE slayer SET power = power + 50 WHERE owner == {us_id}''')
+            conn.commit()
+            bot.edit_message_reply_markup(call.message.chat.id, message_id = call.message.message_id, reply_markup = '')
+            bot.send_message(call.from_user.id, 'Вы купили клинок(+25⚡️) 300 монет')
+        else:
+            bot.send_message(call.message.chat.id, 'Не хватает средств /slayer')
+
+
 
 
 
