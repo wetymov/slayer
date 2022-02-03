@@ -3,7 +3,7 @@ import telebot
 from telebot import types
 import random
 import time
-token = 'ТОКЕН'
+token = '5191596532:AAHd7QtWsrQvavdre4xmDzs1oTI-zru1BRo'
 bot = telebot.TeleBot(token)
 conn = sqlite3.connect('clicker.db', check_same_thread=False)
 cursor = conn.cursor()
@@ -48,6 +48,10 @@ def slayer(message):
         markup.add(item1)
         item2 = types.KeyboardButton("Тренировка💪🏾")
         markup.add(item2)
+        item3 = types.KeyboardButton("Магазин🌇")
+        markup.add(item3)
+        item4 = types.KeyboardButton("Информация о истребителе")
+        markup.add(item4)
         expMAX = int(lvl[0]) * 100
         if expi[0] >= expMAX:
             cursor.execute(f'''UPDATE slayer SET level == {lvl[0]+1} WHERE owner == {us_id}''')
@@ -144,7 +148,12 @@ def do(message):
                 bot.send_message(message.chat.id, 'Персонаж занят')
                 bot.send_message(message.chat.id, 'Подождите')
         elif 'магазин' in message.text.lower():
-            print(0)
+            keyboard = types.InlineKeyboardMarkup()
+            key_yes = types.InlineKeyboardButton(text='Цветок жизни (+50❤️) 300 монет', callback_data='flower')  # кнопка «Да»
+            keyboard.add(key_yes)  # добавляем кнопку в клавиатуру
+            key_no = types.InlineKeyboardButton(text='Клинок(+25⚡️) 300 монет', callback_data='clinok')
+            keyboard.add(key_no)
+            bot.send_message(message.from_user.id, text='МАГАЗИН\nЗдесь вы можете купить различные предметы\nЧтобы, что-либо купить щелкните на кнопку с этим предметом', reply_markup=keyboard)          
         elif 'тренировка' in message.text.lower():
             r = cursor.execute(f'''SELECT zan FROM slayer WHERE owner = {us_id}''').fetchone()
             if r[0] == 0:
@@ -160,7 +169,62 @@ def do(message):
                 cursor.execute(f'''UPDATE slayer SET exp == {nexon} WHERE owner == {us_id}''')
                 conn.commit()
                 bot.send_message(message.chat.id, 'Ура!Тернировка подошла к концу\nВы заработали 50 опыта')
+            else:
+                bot.send_message(message.chat.id, 'Персонаж занят')
+                bot.send_message(message.chat.id, 'Подождите')
+        elif 'инфо' in message.text.lower():
+            name = cursor.execute(f'''SELECT name_slayer FROM slayer WHERE owner = {us_id}''').fetchone()
+            hp = cursor.execute(f'''SELECT hp_slayer FROM slayer WHERE owner = {us_id}''').fetchone()
+            power = cursor.execute(f'''SELECT power FROM slayer WHERE owner = {us_id}''').fetchone()
+            bal = cursor.execute(f'''SELECT balance FROM slayer WHERE owner = {us_id}''').fetchone()
+            lvl = cursor.execute(f'''SELECT level FROM slayer WHERE owner = {us_id}''').fetchone()
+            dyh = cursor.execute(f'''SELECT breath FROM slayer WHERE owner = {us_id}''').fetchone()
+            expi = cursor.execute(f'''SELECT exp FROM slayer WHERE owner = {us_id}''').fetchone()
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            item1 = types.KeyboardButton("Идти на миссию⚡️")
+            markup.add(item1)
+            item2 = types.KeyboardButton("Тренировка💪🏾")
+            markup.add(item2)
+            item3 = types.KeyboardButton("Магазин🌇")
+            markup.add(item3)
+            item4 = types.KeyboardButton("Информация о истребителе")
+            markup.add(item4)
+            expMAX = int(lvl[0]) * 100
+            if expi[0] >= expMAX:
+                cursor.execute(f'''UPDATE slayer SET level == {lvl[0]+1} WHERE owner == {us_id}''')
+                conn.commit()
+                cursor.execute(f'''UPDATE slayer SET exp == {expMAX-expi[0]} WHERE owner == {us_id}''')
+                conn.commit()
+                expMAX += 100
+            lvl = cursor.execute(f'''SELECT level FROM slayer WHERE owner = {us_id}''').fetchone()
+            expi = cursor.execute(f'''SELECT exp FROM slayer WHERE owner = {us_id}''').fetchone()
+            bot.send_message(message.chat.id, f'Имя - {name[0]}\nУровень - {lvl[0]}\nЗдоровье - {hp[0]} ❤️\nСила - {power[0]} ⚡️\nДыхание - {dyh[0]}\nБаланс - {bal[0]} монет\nОпыт - {expi[0]}/{expMAX} exp', reply_markup=markup)
+
+            
+
+@bot.callback_query_handler(func=lambda call: True)
+def callback_worker(call):
+    us_id = call.from_user.id
+    if call.data == "flower":
+        bal = cursor.execute(f'''SELECT balance FROM slayer WHERE owner = {us_id}''').fetchone()
+        if bal[0] >= 300:
+            cursor.execute(f'''UPDATE slayer SET balance = balance - 300 WHERE owner == {us_id}''')
+            conn.commit()
+            cursor.execute(f'''UPDATE slayer SET hp_slayer = hp_slayer + 100 WHERE owner == {us_id}''')
+            conn.commit()
+            bot.edit_message_reply_markup(call.message.chat.id, message_id = call.message.message_id, reply_markup = '')
+            bot.send_message(call.from_user.id, 'Вы купили цветок жизни (+50❤️) 300 монет')
+        else:
+            bot.send_message(call.message.chat.id, 'Не хватает средств /slayer')
+    elif call.data == "clinok":
+        cursor.execute(f'''UPDATE slayer SET balance = balance - 300 WHERE owner == {us_id}''')
+        conn.commit()
+        cursor.execute(f'''UPDATE slayer SET power = power + 50 WHERE owner == {us_id}''')
+        conn.commit()
+        bot.edit_message_reply_markup(call.message.chat.id, message_id = call.message.message_id, reply_markup = '')
+        bot.send_message(call.from_user.id, 'Вы купили клинок(+25⚡️) 300 монет')
 
 
 
+#арена.рейд.топ игроки.гильдии
 bot.polling(none_stop=0)
